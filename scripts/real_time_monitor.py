@@ -52,13 +52,21 @@ def live_plot():
             ax[0].set_title("Protocol Distribution (Live)")
             ax[0].set_ylabel("Packet Count")
 
-            # Bandwidth usage
+            # ---- Bandwidth Plot ----
             ax[1].clear()
             df['second'] = df['time'].dt.floor('S')
             bandwidth = df.groupby('second')['length'].sum()
-            bandwidth.plot(ax=ax[1], color='orange')
-            ax[1].set_title("Bandwidth Usage Over Time (Live)")
+
+            ax[1].plot(bandwidth.index, bandwidth.values, label="Bandwidth")
+
+            # Mark spikes
+            spikes = bandwidth[bandwidth > BANDWIDTH_SPIKE_THRESHOLD]
+            ax[1].scatter(spikes.index, spikes.values, color='red', label="Suspicious Spike")
+
+            ax[1].set_title("Bandwidth Usage Over Time")
             ax[1].set_ylabel("Bytes/sec")
+            ax[1].legend()
+
 
             # ----- ALERT: Bandwidth Spike -----
             if not bandwidth.empty and bandwidth.iloc[-1] > BANDWIDTH_SPIKE_THRESHOLD:
