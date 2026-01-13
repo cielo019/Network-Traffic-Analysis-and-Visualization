@@ -1,2 +1,2 @@
 # Network-Traffic-Analysis-and-Visualization
-This is a mini project for learning  basic concepts of communication network
+To monitor, analyze, and generate reports on network traffic to understand packet flow, bandwidth usage, and detect potential network threats.
