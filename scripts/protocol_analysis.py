@@ -17,7 +17,7 @@ df['length'] = pd.to_numeric(df['length'], errors='coerce')
 df['time'] = pd.to_datetime(df['time'], errors='coerce')
 df.dropna(inplace=True)
 
-# Keep only valid IP packets (IPv4 or IPv6)
+# Keep only valid IP packets
 valid_ips = df['src_ip'].str.match(r'\d{1,3}(\.\d{1,3}){3}$') | df['src_ip'].str.contains(':')
 df = df[valid_ips]
 
@@ -25,41 +25,13 @@ df = df[valid_ips]
 VALID_PROTOCOLS = ['TCP', 'UDP', 'ICMP', 'TLS', 'HTTP', 'HTTPS']
 df = df[df['protocol'].isin(VALID_PROTOCOLS)]
 
-print("Data loaded successfully")
-print(f"Total packets after filtering: {len(df)}")
-print(df.head())
-
 # -------------------------------
-# 3️⃣ Packet Count per Protocol
+# 3️⃣ Prepare Data
 # -------------------------------
 protocol_counts = df['protocol'].value_counts()
-
-plt.figure()
-protocol_counts.plot(kind='bar', color='skyblue')
-plt.xlabel("Protocol")
-plt.ylabel("Packet Count")
-plt.title("Packet Count per Protocol")
-plt.tight_layout()
-plt.show()
-
-# -------------------------------
-# 4️⃣ Bandwidth Usage per Protocol
-# -------------------------------
 protocol_bandwidth = df.groupby('protocol')['length'].sum()
 
-plt.figure()
-protocol_bandwidth.plot(kind='bar', color='orange')
-plt.xlabel("Protocol")
-plt.ylabel("Total Bandwidth (Bytes)")
-plt.title("Bandwidth Usage per Protocol")
-plt.tight_layout()
-plt.show()
-
-# -------------------------------
-# 5️⃣ Top Source IPs per Protocol
-# -------------------------------
-PROTOCOL = 'TCP'  # Change to UDP / ICMP / TLS / HTTP / HTTPS
-
+PROTOCOL = 'TCP'
 top_ips = (
     df[df['protocol'] == PROTOCOL]
     .groupby('src_ip')
@@ -68,66 +40,49 @@ top_ips = (
     .head(10)
 )
 
-plt.figure()
-top_ips.plot(kind='bar', color='green')
-plt.xlabel("Source IP")
-plt.ylabel("Packet Count")
-plt.title(f"Top Source IPs using {PROTOCOL}")
-plt.tight_layout()
-plt.show()
-
-# -------------------------------
-# 6️⃣ Protocol-wise Bandwidth Over Time
-# -------------------------------
 time_proto_bw = (
     df.groupby([df['time'].dt.floor('s'), 'protocol'])['length']
     .sum()
     .unstack(fill_value=0)
 )
 
-time_proto_bw.plot()
-plt.xlabel("Time")
-plt.ylabel("Bandwidth (Bytes/sec)")
-plt.title("Protocol-wise Bandwidth Over Time")
-plt.tight_layout()
-plt.show()
-
-# -------------------------------
-# 7️⃣ Suspicious Protocol Detection
-# -------------------------------
 SUSPICIOUS_PACKET_LIMIT = 500
 suspicious_protocols = protocol_counts[protocol_counts > SUSPICIOUS_PACKET_LIMIT]
+colors_suspicious = ['red' if proto in suspicious_protocols else 'blue' for proto in protocol_counts.index]
 
-print("\nSuspicious Protocols:")
-print(suspicious_protocols)
+# -------------------------------
+# 4️⃣ Plot All Graphs in One Figure
+# -------------------------------
+fig, axes = plt.subplots(3, 2, figsize=(15, 12))  # 3 rows x 2 cols
 
-colors = [
-    'red' if proto in suspicious_protocols else 'blue'
-    for proto in protocol_counts.index
-]
+# Packet Count per Protocol
+protocol_counts.plot(kind='bar', ax=axes[0,0], color='skyblue', title="Packet Count per Protocol")
+axes[0,0].set_xlabel("Protocol")
+axes[0,0].set_ylabel("Packet Count")
 
-plt.figure()
-protocol_counts.plot(kind='bar', color=colors)
-plt.xlabel("Protocol")
-plt.ylabel("Packet Count")
-plt.title("Suspicious Protocol Detection")
+# Bandwidth per Protocol
+protocol_bandwidth.plot(kind='bar', ax=axes[0,1], color='orange', title="Bandwidth per Protocol")
+axes[0,1].set_xlabel("Protocol")
+axes[0,1].set_ylabel("Bytes")
+
+# Top Source IPs
+top_ips.plot(kind='bar', ax=axes[1,0], color='green', title=f"Top Source IPs ({PROTOCOL})")
+axes[1,0].set_xlabel("Source IP")
+axes[1,0].set_ylabel("Packet Count")
+
+# Protocol-wise Bandwidth Over Time
+time_proto_bw.plot(ax=axes[1,1])
+axes[1,1].set_xlabel("Time")
+axes[1,1].set_ylabel("Bandwidth (Bytes/sec)")
+axes[1,1].set_title("Protocol-wise Bandwidth Over Time")
+
+# Suspicious Protocol Detection
+protocol_counts.plot(kind='bar', ax=axes[2,0], color=colors_suspicious, title="Suspicious Protocol Detection")
+axes[2,0].set_xlabel("Protocol")
+axes[2,0].set_ylabel("Packet Count")
+
+# Hide empty subplot (2,1)
+axes[2,1].axis('off')
+
 plt.tight_layout()
 plt.show()
-
-# -------------------------------
-# 8️⃣ ICMP Attack Detection
-# -------------------------------
-icmp_df = df[df['protocol'] == 'ICMP']
-icmp_ip_counts = icmp_df.groupby('src_ip').size()
-
-print("\nTop ICMP Senders:")
-print(icmp_ip_counts.sort_values(ascending=False).head(5))
-
-# -------------------------------
-# 9️⃣ UDP Flood Detection
-# -------------------------------
-udp_df = df[df['protocol'] == 'UDP']
-udp_ip_bandwidth = udp_df.groupby('src_ip')['length'].sum()
-
-print("\nHigh UDP Bandwidth IPs:")
-print(udp_ip_bandwidth.sort_values(ascending=False).head(5))
