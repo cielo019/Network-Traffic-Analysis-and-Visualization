@@ -2,6 +2,8 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 
+plt.style.use('bmh')   # Professional look
+
 # -------------------------------
 # 1️⃣ Load CSV safely
 # -------------------------------
@@ -48,40 +50,51 @@ time_proto_bw = (
 
 SUSPICIOUS_PACKET_LIMIT = 500
 suspicious_protocols = protocol_counts[protocol_counts > SUSPICIOUS_PACKET_LIMIT]
-colors_suspicious = ['red' if proto in suspicious_protocols else 'blue' for proto in protocol_counts.index]
+colors_suspicious = ['red' if proto in suspicious_protocols else 'steelblue' for proto in protocol_counts.index]
 
 # -------------------------------
-# 4️⃣ Plot All Graphs in One Figure
+# 4️⃣ Plot All Graphs in One Figure (Compact & Professional)
 # -------------------------------
-fig, axes = plt.subplots(3, 2, figsize=(15, 12))  # 3 rows x 2 cols
+fig, axes = plt.subplots(3, 2, figsize=(12, 10))  # Smaller figure
 
-# Packet Count per Protocol
-protocol_counts.plot(kind='bar', ax=axes[0,0], color='skyblue', title="Packet Count per Protocol")
+# 1. Packet Count per Protocol
+protocol_counts.plot(kind='bar', ax=axes[0,0], color='steelblue')
+axes[0,0].set_title("Packet Count per Protocol", fontsize=12, fontweight='bold')
 axes[0,0].set_xlabel("Protocol")
-axes[0,0].set_ylabel("Packet Count")
+axes[0,0].set_ylabel("Count")
+axes[0,0].grid(True, linestyle='--', alpha=0.5)
 
-# Bandwidth per Protocol
-protocol_bandwidth.plot(kind='bar', ax=axes[0,1], color='orange', title="Bandwidth per Protocol")
+# 2. Bandwidth per Protocol
+protocol_bandwidth.plot(kind='bar', ax=axes[0,1], color='orange')
+axes[0,1].set_title("Bandwidth Usage per Protocol", fontsize=12, fontweight='bold')
 axes[0,1].set_xlabel("Protocol")
 axes[0,1].set_ylabel("Bytes")
+axes[0,1].grid(True, linestyle='--', alpha=0.5)
 
-# Top Source IPs
-top_ips.plot(kind='bar', ax=axes[1,0], color='green', title=f"Top Source IPs ({PROTOCOL})")
+# 3. Top Source IPs for Protocol
+top_ips.plot(kind='bar', ax=axes[1,0], color='green')
+axes[1,0].set_title(f"Top Source IPs ({PROTOCOL})", fontsize=12, fontweight='bold')
 axes[1,0].set_xlabel("Source IP")
 axes[1,0].set_ylabel("Packet Count")
+axes[1,0].tick_params(axis='x', rotation=45)
+axes[1,0].grid(True, linestyle='--', alpha=0.5)
 
-# Protocol-wise Bandwidth Over Time
-time_proto_bw.plot(ax=axes[1,1])
+# 4. Protocol Bandwidth Over Time
+time_proto_bw.plot(ax=axes[1,1], linewidth=1.5)
+axes[1,1].set_title("Protocol-wise Bandwidth Over Time", fontsize=12, fontweight='bold')
 axes[1,1].set_xlabel("Time")
-axes[1,1].set_ylabel("Bandwidth (Bytes/sec)")
-axes[1,1].set_title("Protocol-wise Bandwidth Over Time")
+axes[1,1].set_ylabel("Bytes/sec")
+axes[1,1].legend(fontsize=8)
+axes[1,1].grid(True, linestyle='--', alpha=0.5)
 
-# Suspicious Protocol Detection
-protocol_counts.plot(kind='bar', ax=axes[2,0], color=colors_suspicious, title="Suspicious Protocol Detection")
+# 5. Suspicious Protocol Detection
+protocol_counts.plot(kind='bar', ax=axes[2,0], color=colors_suspicious)
+axes[2,0].set_title("Suspicious Protocol Detection", fontsize=12, fontweight='bold')
 axes[2,0].set_xlabel("Protocol")
-axes[2,0].set_ylabel("Packet Count")
+axes[2,0].set_ylabel("Count")
+axes[2,0].grid(True, linestyle='--', alpha=0.5)
 
-# Hide empty subplot (2,1)
+# 6. Hide empty subplot
 axes[2,1].axis('off')
 
 plt.tight_layout()
