@@ -1,8 +1,12 @@
+import os
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# Load processed traffic data
-df = pd.read_csv('/data/processed/traffic.csv')
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CSV_PATH = os.path.join(BASE_DIR, 'data', 'processed', 'traffic.csv')
+
+df = pd.read_csv(CSV_PATH)
+
 
 # -------------------------------
 # Basic cleanup
