@@ -11,3 +11,5 @@ Expected Outcome:
   - Understand packet-level communication
   - Visualize traffic patterns
   - Identify suspicious or abnormal traffic behavior
+
+Domain: Networking | Cybersecurity | Data Analysis
