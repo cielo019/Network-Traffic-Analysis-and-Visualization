@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 plt.style.use('bmh')   # Professional look
 
 # -------------------------------
-# 1️⃣ Load CSV safely
+#  Load CSV safely
 # -------------------------------
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CSV_PATH = os.path.join(BASE_DIR, 'data', 'processed', 'traffic.csv')
@@ -13,7 +13,7 @@ CSV_PATH = os.path.join(BASE_DIR, 'data', 'processed', 'traffic.csv')
 df = pd.read_csv(CSV_PATH)
 
 # -------------------------------
-# 2️⃣ Data Cleanup
+#  Data Cleanup
 # -------------------------------
 df['length'] = pd.to_numeric(df['length'], errors='coerce')
 df['time'] = pd.to_datetime(df['time'], errors='coerce')
@@ -28,7 +28,7 @@ VALID_PROTOCOLS = ['TCP', 'UDP', 'ICMP', 'TLS', 'HTTP', 'HTTPS']
 df = df[df['protocol'].isin(VALID_PROTOCOLS)]
 
 # -------------------------------
-# 3️⃣ Prepare Data
+#  Prepare Data
 # -------------------------------
 protocol_counts = df['protocol'].value_counts()
 protocol_bandwidth = df.groupby('protocol')['length'].sum()
@@ -53,7 +53,7 @@ suspicious_protocols = protocol_counts[protocol_counts > SUSPICIOUS_PACKET_LIMIT
 colors_suspicious = ['red' if proto in suspicious_protocols else 'steelblue' for proto in protocol_counts.index]
 
 # -------------------------------
-# 4️⃣ Plot All Graphs in One Figure (Compact & Professional)
+# Plot All Graphs in One Figure (Compact & Professional)
 # -------------------------------
 fig, axes = plt.subplots(3, 2, figsize=(12, 10))  # Smaller figure
 
