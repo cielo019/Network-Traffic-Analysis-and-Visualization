@@ -1,91 +1,45 @@
 import pyshark
 import pandas as pd
-import matplotlib.pyplot as plt
-from collections import Counter
-import threading
-import time
+import os
 import asyncio
+from datetime import datetime
 
-# ===== SETTINGS =====
-INTERFACE = 'Wi-Fi'        # Change to your interface
-MAX_PACKETS = 1000         # Keep recent packets in memory
-UPDATE_INTERVAL = 2        # seconds for updating graphs
-SUSPICIOUS_PACKET_THRESHOLD = 50  # packets from one IP in recent window
-BANDWIDTH_SPIKE_THRESHOLD = 2000  # bytes/sec considered high
+# ================= SETTINGS =================
+INTERFACE = 'Wi-Fi'
+MAX_PACKETS = 1000
 
-# ===== GLOBAL VARIABLES =====
-packet_data = []
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUTPUT_CSV = os.path.join(BASE_DIR, "data", "processed", "realtime_traffic.csv")
 
-# ===== FUNCTION: CAPTURE PACKETS =====
+# ===========================================
+packet_buffer = []
+
 def capture_packets():
-    # Fix asyncio issue in thread
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
     capture = pyshark.LiveCapture(interface=INTERFACE)
+
     for pkt in capture.sniff_continuously():
         try:
-            packet_data.append({
-                'time': pkt.sniff_time,
-                'src_ip': pkt.ip.src if hasattr(pkt, "ip") else 'IPv6',
-                'protocol': pkt.highest_layer,
-                'length': int(pkt.length)
+            packet_buffer.append({
+                "time": pkt.sniff_time,
+                "src_ip": pkt.ip.src if hasattr(pkt, "ip") else "IPv6",
+                "protocol": pkt.highest_layer,
+                "length": int(pkt.length)
             })
-            if len(packet_data) > MAX_PACKETS:
-                packet_data.pop(0)
+
+            if len(packet_buffer) > MAX_PACKETS:
+                packet_buffer.pop(0)
+
+            # Write buffer to CSV
+            df = pd.DataFrame(packet_buffer)
+            df.to_csv(OUTPUT_CSV, index=False)
+
         except:
             continue
 
-# ===== FUNCTION: LIVE PLOT + ALERTS =====
-def live_plot():
-    plt.ion()  # interactive mode
-    fig, ax = plt.subplots(2,1, figsize=(10,6))
 
-    while True:
-        if packet_data:
-            df = pd.DataFrame(packet_data)
-
-            # Protocol distribution plot
-            ax[0].clear()
-            protocol_count = df['protocol'].value_counts()
-            protocol_count.plot(kind='bar', ax=ax[0], color='skyblue')
-            ax[0].set_title("Protocol Distribution (Live)")
-            ax[0].set_ylabel("Packet Count")
-
-            # ---- Bandwidth Plot ----
-            ax[1].clear()
-            df['second'] = df['time'].dt.floor('S')
-            bandwidth = df.groupby('second')['length'].sum()
-
-            ax[1].plot(bandwidth.index, bandwidth.values, label="Bandwidth")
-
-            # Mark spikes
-            spikes = bandwidth[bandwidth > BANDWIDTH_SPIKE_THRESHOLD]
-            ax[1].scatter(spikes.index, spikes.values, color='red', label="Suspicious Spike")
-
-            ax[1].set_title("Bandwidth Usage Over Time")
-            ax[1].set_ylabel("Bytes/sec")
-            ax[1].legend()
-
-
-            # ----- ALERT: Bandwidth Spike -----
-            if not bandwidth.empty and bandwidth.iloc[-1] > BANDWIDTH_SPIKE_THRESHOLD:
-                print(f"[ALERT] Bandwidth spike detected: {bandwidth.iloc[-1]} bytes/sec at {bandwidth.index[-1]}")
-
-            # ----- ALERT: Suspicious IPs -----
-            recent_window = df[df['second'] >= df['second'].max() - pd.Timedelta(seconds=10)]
-            ip_counts = recent_window['src_ip'].value_counts()
-            suspicious_ips = ip_counts[ip_counts > SUSPICIOUS_PACKET_THRESHOLD]
-            for ip, count in suspicious_ips.items():
-                print(f"[ALERT] Suspicious IP detected: {ip} sent {count} packets in last 10 seconds")
-
-            plt.tight_layout()
-            plt.pause(UPDATE_INTERVAL)
-        else:
-            time.sleep(1)
-
-# ===== MAIN =====
 if __name__ == "__main__":
-    capture_thread = threading.Thread(target=capture_packets, daemon=True)
-    capture_thread.start()
-    live_plot()
+    print("[INFO] Starting live traffic capture...")
+    capture_packets()
