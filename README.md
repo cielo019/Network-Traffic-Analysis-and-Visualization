@@ -5,7 +5,7 @@ Tools Used:
   - Wireshark (packet capture)
   - Python (automation & analysis)
   - Libraries: pyshark, pandas, matplotlib, seaborn
-  - GitHub (version control & documentation)
+ 
 
 Expected Outcome:
   - Understand packet-level communication
